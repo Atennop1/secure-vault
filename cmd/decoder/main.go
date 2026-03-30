@@ -10,30 +10,29 @@ import (
 )
 
 func main() {
-	err := config.LoadEnv("secret", "config")
+	config.AddPaths("config")
+	err := config.LoadEnv("secret")
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to load config/secret.env: %w", err))
 	}
 
-	secret := []byte(viper.GetString("AES256_SECRET"))
-
-	err = config.LoadEnv("ports", "config")
+	err = config.LoadEnv("ports")
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to load config/ports.env: %w", err))
 	}
 
-	service, err := decoder.NewService(secret, viper.GetInt("STORAGE_PORT"))
+	service, err := decoder.NewService([]byte(viper.GetString("AES256_SECRET")), viper.GetInt("STORAGE_PORT"))
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to create service: %w", err))
 	}
-
-	handler := decoder.NewHandler(service)
 
 	r := gin.Default()
+
+	handler := decoder.NewHandler(service)
 	r.GET("/decode/:slug", handler.Decode)
 
-	err = r.Run(fmt.Sprintf("localhost:%d", 8081))
+	err = r.Run(fmt.Sprintf("localhost:%d", viper.GetInt("DECODER_PORT")))
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to run gin engine on port %d: %w", viper.GetInt("DECODER_PORT"), err))
 	}
 }

@@ -22,12 +22,10 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) Generate(ctx context.Context, req *generatorpb.GenerateRequest) (*generatorpb.GenerateResponse, error) {
 	if req.Length <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "length must be more than 0")
+		return nil, status.Error(codes.InvalidArgument, "generator: length must be more than 0")
 	}
 
-	slug := h.service.Generate(int(req.Length))
-
 	return &generatorpb.GenerateResponse{
-		Slug: slug,
+		Slug: h.service.Generate(int(req.Length)),
 	}, nil
 }

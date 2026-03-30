@@ -27,9 +27,7 @@ func (h *Handler) Store(ctx context.Context, req *storagepb.StoreRequest) (*empt
 func (h *Handler) Load(ctx context.Context, req *storagepb.LoadRequest) (*storagepb.LoadResponse, error) {
 	value, ok := h.service.Load(req.Key)
 	if !ok {
-		return &storagepb.LoadResponse{
-			Found: false,
-		}, nil
+		return &storagepb.LoadResponse{Found: false}, nil
 	}
 
 	return &storagepb.LoadResponse{

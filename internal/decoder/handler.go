@@ -1,6 +1,7 @@
 package decoder
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -20,15 +21,20 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) Decode(ctx *gin.Context) {
 	slug := ctx.Param("slug")
 	if slug == "" {
-		ctx.IndentedJSON(http.StatusBadRequest, "slug can't be empty")
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{"error": "slug can't be empty"})
 		return
 	}
 
 	content, err := h.service.Decode(ctx, slug)
-	if err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("failed to decode slug '%s': %s", slug, err.Error()))
+	if errors.Is(err, ErrNotFound) {
+		ctx.IndentedJSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("no data under slug %s", slug)})
 		return
 	}
 
-	ctx.String(http.StatusOK, content)
+	if err != nil {
+		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("something went wrong: %s", err.Error())})
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, gin.H{"content": content})
 }

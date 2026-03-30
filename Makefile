@@ -8,9 +8,16 @@ COVERAGE ?= 0
 
 # recipes list
 .PHONY: proto test lint fmt clean
+.PHONY: build push run 
 
 # source files for tracking changes
 SRC := $(shell find . -type f -name '*.go')
+
+build:
+	@docker build . -t vault-generator -f ./cmd/generator/Dockerfile
+	@docker build . -t vault-storage -f ./cmd/storage/Dockerfile
+	@docker build . -t vault-encoder -f ./cmd/encoder/Dockerfile
+	@docker build . -t vault-decoder -f ./cmd/decoder/Dockerfile
 
 # reciper for generating Go code based on .proto files
 proto:

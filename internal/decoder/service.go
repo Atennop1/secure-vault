@@ -5,12 +5,17 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/Atennop1/secure-vault/proto/storagepb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+)
+
+var (
+	ErrNotFound = errors.New("there is no ciphered text with such slug")
 )
 
 type Service struct {
@@ -53,7 +58,7 @@ func (s *Service) Decode(ctx context.Context, slug string) (string, error) {
 	}
 
 	if !resp.Found {
-		return "", fmt.Errorf("decoder: there is no ciphered text with such slug: %w", err)
+		return "", fmt.Errorf("decoder: slug %s: %w", slug, ErrNotFound)
 	}
 
 	nonceSize := gcm.NonceSize()

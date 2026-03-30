@@ -2,6 +2,8 @@ package generator
 
 import "slices"
 
+// TODO: these slugs aren't in sync with storage ones, will fix when add Redis
+
 type Repository struct {
 	storage []string
 }

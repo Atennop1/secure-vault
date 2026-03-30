@@ -12,14 +12,15 @@ import (
 )
 
 func main() {
-	err := config.LoadEnv("ports", "config")
+	config.AddPaths("config")
+	err := config.LoadEnv("ports")
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to load config/ports.env: %w", err))
 	}
 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%d", viper.GetInt("GENERATOR_PORT")))
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to create a listener on port %d: %w", viper.GetInt("GENERATOR_PORT"), err))
 	}
 
 	repo := generator.NewRepository()
@@ -31,6 +32,6 @@ func main() {
 
 	err = server.Serve(l)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("cmd: failed to serve: %w", err))
 	}
 }

@@ -25,15 +25,15 @@ func (h *Handler) Encode(ctx *gin.Context) {
 	var request Request
 
 	if err := ctx.BindJSON(&request); err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("failed to map JSON body to request: %s", err.Error()))
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("failed to map JSON body to request: %s", err.Error())})
 		return
 	}
 
 	slug, err := h.service.Encode(ctx, request.Content)
 	if err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("failed to encode content '%s': %s", request.Content, err.Error()))
+		ctx.IndentedJSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("something went wrong: %s", err.Error())})
 		return
 	}
 
-	ctx.IndentedJSON(http.StatusOK, slug)
+	ctx.IndentedJSON(http.StatusOK, gin.H{"slug": slug})
 }

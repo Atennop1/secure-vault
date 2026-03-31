@@ -25,7 +25,7 @@ type Service struct {
 }
 
 func NewService(key []byte, storagePort int) (*Service, error) {
-	conn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", storagePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("storage:%d", storagePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("decoder: failed to open grpc connection on port %d: %w", storagePort, err)
 	}

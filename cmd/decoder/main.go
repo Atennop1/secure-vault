@@ -31,7 +31,7 @@ func main() {
 	handler := decoder.NewHandler(service)
 	r.GET("/decode/:slug", handler.Decode)
 
-	err = r.Run(fmt.Sprintf("localhost:%d", viper.GetInt("DECODER_PORT")))
+	err = r.Run(fmt.Sprintf(":%d", viper.GetInt("DECODER_PORT")))
 	if err != nil {
 		panic(fmt.Errorf("cmd: failed to run gin engine on port %d: %w", viper.GetInt("DECODER_PORT"), err))
 	}

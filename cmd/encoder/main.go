@@ -31,7 +31,7 @@ func main() {
 	handler := encoder.NewHandler(service)
 	r.POST("/encode", handler.Encode)
 
-	err = r.Run(fmt.Sprintf("localhost:%d", viper.GetInt("ENCODER_PORT")))
+	err = r.Run(fmt.Sprintf(":%d", viper.GetInt("ENCODER_PORT")))
 	if err != nil {
 		panic(fmt.Errorf("cmd: failed to run gin engine on port %d: %w", viper.GetInt("ENCODER_PORT"), err))
 	}

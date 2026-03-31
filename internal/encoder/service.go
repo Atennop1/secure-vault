@@ -22,12 +22,12 @@ type Service struct {
 }
 
 func NewService(key []byte, generatorPort, storagePort int) (*Service, error) {
-	generatorConn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", generatorPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	generatorConn, err := grpc.NewClient(fmt.Sprintf("generator:%d", generatorPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("encoder: failed to open grpc connection on port %d: %w", storagePort, err)
 	}
 
-	storageConn, err := grpc.NewClient(fmt.Sprintf("localhost:%d", storagePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	storageConn, err := grpc.NewClient(fmt.Sprintf("storage:%d", storagePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("encoder: failed to open grpc connection on port %d: %w", storagePort, err)
 	}

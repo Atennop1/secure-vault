@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decoder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: decoder
+  template:
+    metadata:
+      labels:
+        app: decoder
+    spec:
+      containers:
+        - name: decoder
+          image: atennop/secure-vault:decoder
+          imagePullPolicy: Always
+          ports:
+            - containerPort: ${DECODER_PORT}

@@ -13,13 +13,32 @@ COVERAGE ?= 0
 # source files for tracking changes
 SRC := $(shell find . -type f -name '*.go')
 
+# recipe for building containers for every microservice
 build:
 	@docker build . -t vault-generator -f ./cmd/generator/Dockerfile
 	@docker build . -t vault-storage -f ./cmd/storage/Dockerfile
 	@docker build . -t vault-encoder -f ./cmd/encoder/Dockerfile
 	@docker build . -t vault-decoder -f ./cmd/decoder/Dockerfile
 
-# reciper for generating Go code based on .proto files
+# recipe for tagging and pushing all containers to the repo
+push: build
+	@docker tag vault-generator:latest atennop/secure-vault:generator
+	@docker push atennop/secure-vault:generator
+	@docker tag vault-storage:latest atennop/secure-vault:storage
+	@docker push atennop/secure-vault:storage
+	@docker tag vault-encoder:latest atennop/secure-vault:encoder
+	@docker push atennop/secure-vault:encoder
+	@docker tag vault-decoder:latest atennop/secure-vault:decoder
+	@docker push atennop/secure-vault:decoder
+
+# recipe for running app in the k8s cluster
+run: push
+	@export $$(cat config/ports.env | xargs) && \
+	for f in k8s/*.yaml; do \
+		envsubst < $$f | kubectl apply -f -; \
+	done
+
+# recipe for generating Go code based on .proto files
 proto:
 	@protoc --go_out=. --go-grpc_out=. proto/generator.proto
 	@protoc --go_out=. --go-grpc_out=. proto/storage.proto
@@ -38,6 +57,7 @@ lint: $(OUT_DIR)/lint.cache
 clean:
 	@echo ">> Cleaning up..."
 	@rm -rf $(BIN_DIR) $(OUT_DIR)
+	@kubectl delete -f k8s/
 	@echo ">> Cleaned."
 
 # creating output directory if it's missing

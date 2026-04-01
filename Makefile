@@ -7,42 +7,11 @@ VERBOSE ?= 0
 COVERAGE ?= 0
 
 # recipes list
-.PHONY: proto test lint fmt clean
-.PHONY: build push run 
+.PHONY: proto fmt lint test 
+.PHONY: build push run clean
 
 # source files for tracking changes
 SRC := $(shell find . -type f -name '*.go')
-
-# recipe for building containers for every microservice
-build:
-	@docker build . -t vault-base -f ./cmd/Dockerfile
-	@docker build . -t vault-generator -f ./cmd/generator/Dockerfile
-	@docker build . -t vault-storage -f ./cmd/storage/Dockerfile
-	@docker build . -t vault-encoder -f ./cmd/encoder/Dockerfile
-	@docker build . -t vault-decoder -f ./cmd/decoder/Dockerfile
-
-# recipe for tagging and pushing all containers to the repo
-push: build
-	@docker tag vault-generator:latest atennop/secure-vault:generator
-	@docker push atennop/secure-vault:generator
-	@docker tag vault-storage:latest atennop/secure-vault:storage
-	@docker push atennop/secure-vault:storage
-	@docker tag vault-encoder:latest atennop/secure-vault:encoder
-	@docker push atennop/secure-vault:encoder
-	@docker tag vault-decoder:latest atennop/secure-vault:decoder
-	@docker push atennop/secure-vault:decoder
-
-# recipe for running app in the k8s cluster
-run: build
-	minikube image load vault-generator:latest
-	minikube image load vault-storage:latest
-	minikube image load vault-encoder:latest
-	minikube image load vault-decoder:latest
-
-	@export $$(cat config/ports.env | xargs) && \
-	for f in k8s/*.yaml; do \
-		envsubst < $$f | kubectl apply -f -; \
-	done
 
 # recipe for generating Go code based on .proto files
 proto:
@@ -50,14 +19,31 @@ proto:
 	@protoc --go_out=. --go-grpc_out=. proto/storage.proto
 	@echo ">> Go code generated."
 
-# public recipe for testing (with or without coverage)
-test: $(OUT_DIR)/test.cache.$(COVERAGE)
-
 # public recipe for formatting
 fmt: $(OUT_DIR)/fmt.cache
 
 # public recipe for linting
 lint: $(OUT_DIR)/lint.cache
+
+# public recipe for building
+build: $(OUT_DIR)/build.cache
+
+# public recipe for testing (with or without coverage)
+test: $(OUT_DIR)/test.cache.$(COVERAGE)
+
+# recipe for running app in the k8s cluster 
+run: build
+	@export $$(cat config/ports.env | xargs) && \
+	for f in k8s/*.yaml; do \
+		envsubst < $$f | kubectl apply -f -; \
+	done
+
+# recipe for tagging and pushing all containers to the repo
+push: build
+	@docker push atennop/secure-vault:generator
+	@docker push atennop/secure-vault:storage
+	@docker push atennop/secure-vault:encoder
+	@docker push atennop/secure-vault:decoder
 
 # recipe for cleaning up garbage
 clean:
@@ -85,6 +71,15 @@ $(OUT_DIR)/lint.cache: $(SRC) | $(OUT_DIR)
 		exit 1; \
 	};
 	@echo ">> Linted."
+	@touch $@
+
+# recipe for building containers for every microservice
+$(OUT_DIR)/build.cache: $(SRC) | $(OUT_DIR)
+	@eval $(minikube docker-env) && \
+	docker build . -t atennop/secure-vault:generator --target generator -f ./cmd/Dockerfile && \
+	docker build . -t atennop/secure-vault:storage --target storage -f ./cmd/Dockerfile && \
+	docker build . -t atennop/secure-vault:encoder --target encoder -f ./cmd/Dockerfile && \
+	docker build . -t atennop/secure-vault:decoder --target decoder -f ./cmd/Dockerfile 
 	@touch $@
 
 # testing source code (with or without coverage)

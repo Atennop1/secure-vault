@@ -12,19 +12,34 @@ COPY cmd/ ./cmd
 COPY proto/ ./proto
 COPY internal/ ./internal
 
-# building
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o generator ./cmd/generator
+# building services
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./generator ./cmd/generator && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./storage ./cmd/storage && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./encoder ./cmd/encoder && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o ./decoder ./cmd/decoder
 
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o storage ./cmd/storage
+# generator scratch
+FROM scratch AS generator
+COPY /config ./config
+COPY --from=builder /app/generator /generator
+ENTRYPOINT ["/generator"]
 
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o encoder ./cmd/encoder
+# storage scratch
+FROM scratch AS storage
+COPY /config ./config
+COPY --from=builder /app/storage /storage
+ENTRYPOINT ["/storage"]
 
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -o decoder ./cmd/decoder
+# encoder scratch
+FROM scratch AS encoder
+COPY /config ./config
+COPY --from=builder /app/encoder /encoder
+ENTRYPOINT ["/encoder"]
+
+# decoder scratch
+FROM scratch AS decoder
+COPY /config ./config
+COPY --from=builder /app/decoder /decoder
+ENTRYPOINT ["/decoder"]

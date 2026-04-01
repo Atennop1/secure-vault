@@ -15,6 +15,7 @@ SRC := $(shell find . -type f -name '*.go')
 
 # recipe for building containers for every microservice
 build:
+	@docker build . -t vault-base -f ./cmd/Dockerfile
 	@docker build . -t vault-generator -f ./cmd/generator/Dockerfile
 	@docker build . -t vault-storage -f ./cmd/storage/Dockerfile
 	@docker build . -t vault-encoder -f ./cmd/encoder/Dockerfile
@@ -32,7 +33,12 @@ push: build
 	@docker push atennop/secure-vault:decoder
 
 # recipe for running app in the k8s cluster
-run: push
+run: build
+	minikube image load vault-generator:latest
+	minikube image load vault-storage:latest
+	minikube image load vault-encoder:latest
+	minikube image load vault-decoder:latest
+
 	@export $$(cat config/ports.env | xargs) && \
 	for f in k8s/*.yaml; do \
 		envsubst < $$f | kubectl apply -f -; \

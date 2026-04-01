@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: decoder
-          image: atennop/secure-vault:decoder
-          imagePullPolicy: Always
+          image: vault-decoder:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: ${DECODER_PORT}

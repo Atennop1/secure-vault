@@ -10,8 +10,8 @@ import (
 	"io"
 
 	"github.com/Atennop1/secure-vault/proto/storagepb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -19,25 +19,19 @@ var (
 )
 
 type Service struct {
-	key []byte
-
+	secret  []byte
 	storage storagepb.StorageServiceClient
 }
 
-func NewService(key []byte, storagePort int) (*Service, error) {
-	conn, err := grpc.NewClient(fmt.Sprintf("storage:%d", storagePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("decoder: failed to open grpc connection on port %d: %w", storagePort, err)
-	}
-
+func NewService(secret []byte, storage storagepb.StorageServiceClient) (*Service, error) {
 	return &Service{
-		key:     key,
-		storage: storagepb.NewStorageServiceClient(conn),
+		secret:  secret,
+		storage: storage,
 	}, nil
 }
 
 func (s *Service) Decode(ctx context.Context, slug string) (string, error) {
-	block, err := aes.NewCipher(s.key)
+	block, err := aes.NewCipher(s.secret)
 	if err != nil {
 		return "", fmt.Errorf("decoder: failed to generate AES block: %w", err)
 	}
@@ -54,11 +48,11 @@ func (s *Service) Decode(ctx context.Context, slug string) (string, error) {
 
 	resp, err := s.storage.Load(ctx, &storagepb.LoadRequest{Key: slug})
 	if err != nil {
-		return "", fmt.Errorf("decoder: failed to load ciphered text from storage: %w", err)
-	}
+		if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
+			return "", fmt.Errorf("decoder: slug %s: %w", slug, ErrNotFound)
+		}
 
-	if !resp.Found {
-		return "", fmt.Errorf("decoder: slug %s: %w", slug, ErrNotFound)
+		return "", fmt.Errorf("decoder: failed to load ciphered text from storage: %w", err)
 	}
 
 	nonceSize := gcm.NonceSize()

@@ -5,8 +5,12 @@ import (
 
 	"github.com/Atennop1/secure-vault/internal/encoder"
 	"github.com/Atennop1/secure-vault/pkg/config"
+	"github.com/Atennop1/secure-vault/proto/generatorpb"
+	"github.com/Atennop1/secure-vault/proto/storagepb"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -21,13 +25,22 @@ func main() {
 		panic(fmt.Errorf("cmd: failed to load config/ports.env: %w", err))
 	}
 
-	service, err := encoder.NewService([]byte(viper.GetString("AES256_SECRET")), viper.GetInt("GENERATOR_PORT"), viper.GetInt("STORAGE_PORT"))
+	generatorConn, err := grpc.NewClient(fmt.Sprintf("generator:%d", viper.GetInt("GENERATOR_PORT")), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(fmt.Errorf("cmd: failed to open grpc connection on port %d: %w", viper.GetInt("GENERATOR_PORT"), err))
+	}
+
+	storageConn, err := grpc.NewClient(fmt.Sprintf("storage:%d", viper.GetInt("STORAGE_PORT")), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(fmt.Errorf("cmd: failed to open grpc connection on port %d: %w", viper.GetInt("STORAGE_PORT"), err))
+	}
+
+	service, err := encoder.NewService([]byte(viper.GetString("AES256_SECRET")), generatorpb.NewGeneratorServiceClient(generatorConn), storagepb.NewStorageServiceClient(storageConn))
 	if err != nil {
 		panic(fmt.Errorf("cmd: failed to create service: %w", err))
 	}
 
 	r := gin.Default()
-
 	handler := encoder.NewHandler(service)
 	r.POST("/encode", handler.Encode)
 

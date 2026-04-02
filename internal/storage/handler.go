@@ -2,8 +2,12 @@ package storage
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/Atennop1/secure-vault/proto/storagepb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -20,18 +24,23 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) Store(ctx context.Context, req *storagepb.StoreRequest) (*emptypb.Empty, error) {
-	h.service.Store(req.Key, req.Value)
+	err := h.service.Store(ctx, req.Key, req.Value)
+	if err != nil {
+		return &emptypb.Empty{}, fmt.Errorf("storage: failed to store: %w", err)
+	}
+
 	return &emptypb.Empty{}, nil
 }
 
 func (h *Handler) Load(ctx context.Context, req *storagepb.LoadRequest) (*storagepb.LoadResponse, error) {
-	value, ok := h.service.Load(req.Key)
-	if !ok {
-		return &storagepb.LoadResponse{Found: false}, nil
+	value, err := h.service.Load(ctx, req.Key)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "key not found")
+		}
+
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &storagepb.LoadResponse{
-		Value: value,
-		Found: true,
-	}, nil
+	return &storagepb.LoadResponse{Value: value}, nil
 }

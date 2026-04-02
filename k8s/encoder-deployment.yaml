@@ -15,6 +15,6 @@ spec:
       containers:
         - name: encoder
           image: atennop/secure-vault:encoder
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: ${ENCODER_PORT}

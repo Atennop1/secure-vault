@@ -15,6 +15,6 @@ spec:
       containers:
         - name: storage
           image: atennop/secure-vault:storage
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: ${STORAGE_PORT}

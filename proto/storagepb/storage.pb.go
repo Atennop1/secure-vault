@@ -121,7 +121,6 @@ func (x *LoadRequest) GetKey() string {
 type LoadResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Value         []byte                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
-	Found         bool                   `protobuf:"varint,2,opt,name=found,proto3" json:"found,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -163,13 +162,6 @@ func (x *LoadResponse) GetValue() []byte {
 	return nil
 }
 
-func (x *LoadResponse) GetFound() bool {
-	if x != nil {
-		return x.Found
-	}
-	return false
-}
-
 var File_proto_storage_proto protoreflect.FileDescriptor
 
 const file_proto_storage_proto_rawDesc = "" +
@@ -179,10 +171,9 @@ const file_proto_storage_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\fR\x05value\"\x1f\n" +
 	"\vLoadRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\":\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"$\n" +
 	"\fLoadResponse\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\fR\x05value\x12\x14\n" +
-	"\x05found\x18\x02 \x01(\bR\x05found2}\n" +
+	"\x05value\x18\x01 \x01(\fR\x05value2}\n" +
 	"\x0eStorageService\x126\n" +
 	"\x05Store\x12\x15.storage.StoreRequest\x1a\x16.google.protobuf.Empty\x123\n" +
 	"\x04Load\x12\x14.storage.LoadRequest\x1a\x15.storage.LoadResponseB\x11Z\x0fproto/storagepbb\x06proto3"

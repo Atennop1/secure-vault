@@ -22,24 +22,28 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # generator scratch
 FROM scratch AS generator
-COPY /config ./config
-COPY --from=builder /app/generator /generator
-ENTRYPOINT ["/generator"]
+WORKDIR /app
+COPY --from=builder /app/generator ./generator
+COPY config/ ./config
+ENTRYPOINT ["./generator"]
 
 # storage scratch
 FROM scratch AS storage
-COPY /config ./config
-COPY --from=builder /app/storage /storage
-ENTRYPOINT ["/storage"]
+WORKDIR /app
+COPY --from=builder /app/storage ./storage
+COPY config/ ./config
+ENTRYPOINT ["./storage"]
 
 # encoder scratch
 FROM scratch AS encoder
-COPY /config ./config
-COPY --from=builder /app/encoder /encoder
-ENTRYPOINT ["/encoder"]
+WORKDIR /app
+COPY --from=builder /app/encoder ./encoder
+COPY config/ ./config
+ENTRYPOINT ["./encoder"]
 
 # decoder scratch
 FROM scratch AS decoder
-COPY /config ./config
-COPY --from=builder /app/decoder /decoder
-ENTRYPOINT ["/decoder"]
+WORKDIR /app
+COPY --from=builder /app/decoder ./decoder
+COPY config/ ./config
+ENTRYPOINT ["./decoder"]

@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/Atennop1/secure-vault/internal/storage"
 	"github.com/Atennop1/secure-vault/pkg/config"
 	"github.com/Atennop1/secure-vault/proto/storagepb"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"net"
 )
 
 func main() {
@@ -22,7 +24,12 @@ func main() {
 		panic(fmt.Errorf("cmd: failed to create a listener on port %d: %w", viper.GetInt("STORAGE_PORT"), err))
 	}
 
-	repo := storage.NewRepository()
+	redisOpts, err := redis.ParseURL("redis://vault-redis:6379/0")
+	if err != nil {
+		panic(fmt.Errorf("cmd: failed to create a redis connection on port 6379: %w", err))
+	}
+
+	repo := storage.NewRepository(redis.NewClient(redisOpts))
 	service := storage.NewService(repo)
 	handler := storage.NewHandler(service)
 

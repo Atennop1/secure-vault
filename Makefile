@@ -15,9 +15,10 @@ SRC := $(shell find . -type f -name '*.go')
 
 # recipe for generating Go code based on .proto files
 proto:
+	@echo ">> Generating code..."
 	@protoc --go_out=. --go-grpc_out=. proto/generator.proto
 	@protoc --go_out=. --go-grpc_out=. proto/storage.proto
-	@echo ">> Go code generated."
+	@echo ">> Code generated."
 
 # public recipe for formatting
 fmt: $(OUT_DIR)/fmt.cache
@@ -31,19 +32,23 @@ build: $(OUT_DIR)/build.cache
 # public recipe for testing (with or without coverage)
 test: $(OUT_DIR)/test.cache.$(COVERAGE)
 
-# recipe for running app in the k8s cluster 
-run: build
-	@export $$(cat config/ports.env | xargs) && \
-	for f in k8s/*.yaml; do \
-		envsubst < $$f | kubectl apply -f -; \
-	done
-
 # recipe for tagging and pushing all containers to the repo
 push: build
+	@echo ">> Pushing..."
 	@docker push atennop/secure-vault:generator
 	@docker push atennop/secure-vault:storage
 	@docker push atennop/secure-vault:encoder
 	@docker push atennop/secure-vault:decoder
+	@echo ">> Pushed..."
+
+# recipe for running app in the k8s cluster 
+run: push 
+	@echo ">> Running..."
+	@export $$(cat config/ports.env | xargs) && \
+	for f in k8s/*.yaml; do \
+		envsubst < $$f | kubectl apply -f - > /dev/null; \
+	done
+	@echo ">> Ran."
 
 # recipe for cleaning up garbage
 clean:
@@ -74,12 +79,14 @@ $(OUT_DIR)/lint.cache: $(SRC) | $(OUT_DIR)
 	@touch $@
 
 # recipe for building containers for every microservice
-$(OUT_DIR)/build.cache: $(SRC) | $(OUT_DIR)
+$(OUT_DIR)/build.cache: $(SRC) $(OUT_DIR)/fmt.cache $(OUT_DIR)/lint.cache
+	@echo ">> Building..."
 	@eval $(minikube docker-env) && \
 	docker build . -t atennop/secure-vault:generator --target generator -f ./cmd/Dockerfile && \
 	docker build . -t atennop/secure-vault:storage --target storage -f ./cmd/Dockerfile && \
 	docker build . -t atennop/secure-vault:encoder --target encoder -f ./cmd/Dockerfile && \
 	docker build . -t atennop/secure-vault:decoder --target decoder -f ./cmd/Dockerfile 
+	@echo ">> Built."
 	@touch $@
 
 # testing source code (with or without coverage)

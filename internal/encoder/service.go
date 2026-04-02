@@ -10,37 +10,24 @@ import (
 
 	"github.com/Atennop1/secure-vault/proto/generatorpb"
 	"github.com/Atennop1/secure-vault/proto/storagepb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Service struct {
-	key []byte
-
+	secret    []byte
 	generator generatorpb.GeneratorServiceClient
 	storage   storagepb.StorageServiceClient
 }
 
-func NewService(key []byte, generatorPort, storagePort int) (*Service, error) {
-	generatorConn, err := grpc.NewClient(fmt.Sprintf("generator:%d", generatorPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("encoder: failed to open grpc connection on port %d: %w", storagePort, err)
-	}
-
-	storageConn, err := grpc.NewClient(fmt.Sprintf("storage:%d", storagePort), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, fmt.Errorf("encoder: failed to open grpc connection on port %d: %w", storagePort, err)
-	}
-
+func NewService(secret []byte, generator generatorpb.GeneratorServiceClient, storage storagepb.StorageServiceClient) (*Service, error) {
 	return &Service{
-		key:       key,
-		generator: generatorpb.NewGeneratorServiceClient(generatorConn),
-		storage:   storagepb.NewStorageServiceClient(storageConn),
+		secret:    secret,
+		generator: generator,
+		storage:   storage,
 	}, nil
 }
 
 func (s *Service) Encode(ctx context.Context, content string) (string, error) {
-	block, err := aes.NewCipher(s.key)
+	block, err := aes.NewCipher(s.secret)
 	if err != nil {
 		return "", fmt.Errorf("encoder: failed to generate AES block: %w", err)
 	}

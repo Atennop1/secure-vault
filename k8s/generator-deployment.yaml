@@ -15,6 +15,6 @@ spec:
       containers:
         - name: generator
           image: atennop/secure-vault:generator
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: ${GENERATOR_PORT}

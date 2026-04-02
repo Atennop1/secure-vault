@@ -5,8 +5,11 @@ import (
 
 	"github.com/Atennop1/secure-vault/internal/decoder"
 	"github.com/Atennop1/secure-vault/pkg/config"
+	"github.com/Atennop1/secure-vault/proto/storagepb"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -21,13 +24,17 @@ func main() {
 		panic(fmt.Errorf("cmd: failed to load config/ports.env: %w", err))
 	}
 
-	service, err := decoder.NewService([]byte(viper.GetString("AES256_SECRET")), viper.GetInt("STORAGE_PORT"))
+	storageConn, err := grpc.NewClient(fmt.Sprintf("storage:%d", viper.GetInt("STORAGE_PORT")), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(fmt.Errorf("cmd: failed to open grpc connection on port %d: %w", viper.GetInt("STORAGE_PORT"), err))
+	}
+
+	service, err := decoder.NewService([]byte(viper.GetString("AES256_SECRET")), storagepb.NewStorageServiceClient(storageConn))
 	if err != nil {
 		panic(fmt.Errorf("cmd: failed to create service: %w", err))
 	}
 
 	r := gin.Default()
-
 	handler := decoder.NewHandler(service)
 	r.GET("/decode/:slug", handler.Decode)
 

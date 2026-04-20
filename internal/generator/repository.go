@@ -1,25 +1,40 @@
 package generator
 
-import "slices"
+import (
+	"context"
+	"fmt"
 
-// TODO: these slugs aren't in sync with storage ones, will fix when add Redis
+	"github.com/redis/go-redis/v9"
+)
 
 type Repository struct {
-	storage []string
+	client *redis.Client
 }
 
-func NewRepository() *Repository {
-	return &Repository{}
+func NewRepository(client *redis.Client) *Repository {
+	return &Repository{
+		client: client,
+	}
 }
 
-func (r *Repository) Store(value string) {
-	if r.Contains(value) {
-		return
+func (r *Repository) Store(ctx context.Context, value string) error {
+	err := r.client.LPush(ctx, "slugs", value).Err()
+	if err != nil {
+		return fmt.Errorf("storage: failed to store slug '%s' to redis: %w", value, err)
 	}
 
-	r.storage = append(r.storage, value)
+	return nil
 }
 
-func (r *Repository) Contains(value string) bool {
-	return slices.Contains(r.storage, value)
+func (r *Repository) Contains(ctx context.Context, value string) (bool, error) {
+	_, err := r.client.LPos(ctx, "slugs", value, redis.LPosArgs{}).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("storage: failed to check whether slug '%s' exists or not", value)
+	}
+
+	return true, nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/Atennop1/secure-vault/internal/generator"
 	"github.com/Atennop1/secure-vault/pkg/config"
 	"github.com/Atennop1/secure-vault/proto/generatorpb"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
@@ -23,7 +24,12 @@ func main() {
 		panic(fmt.Errorf("cmd: failed to create a listener on port %d: %w", viper.GetInt("GENERATOR_PORT"), err))
 	}
 
-	repo := generator.NewRepository()
+	redisOpts, err := redis.ParseURL("redis://vault-redis:6379/0")
+	if err != nil {
+		panic(fmt.Errorf("cmd: failed to create a redis connection on port 6379: %w", err))
+	}
+
+	repo := generator.NewRepository(redis.NewClient(redisOpts))
 	service := generator.NewService(repo)
 	handler := generator.NewHandler(service)
 

@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"context"
 	"math/rand/v2"
 	"strings"
 )
@@ -17,7 +18,7 @@ func NewService(repo *Repository) *Service {
 	}
 }
 
-func (s *Service) Generate(length int) string {
+func (s *Service) Generate(ctx context.Context, length int) (string, error) {
 	var sb strings.Builder
 	sb.Grow(length)
 
@@ -26,13 +27,22 @@ func (s *Service) Generate(length int) string {
 			sb.WriteByte(charset[rand.IntN(len(charset))])
 		}
 
-		if !s.repo.Contains(sb.String()) {
+		contains, err := s.repo.Contains(ctx, sb.String())
+		if err != nil {
+			return "", err
+		}
+
+		if !contains {
 			break
 		}
 
 		sb.Reset()
 	}
 
-	s.repo.Store(sb.String())
-	return sb.String()
+	err := s.repo.Store(ctx, sb.String())
+	if err != nil {
+		return "", err
+	}
+
+	return sb.String(), nil
 }

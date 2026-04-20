@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Atennop1/secure-vault/proto/generatorpb"
 	"google.golang.org/grpc/codes"
@@ -25,7 +26,10 @@ func (h *Handler) Generate(ctx context.Context, req *generatorpb.GenerateRequest
 		return nil, status.Error(codes.InvalidArgument, "generator: length must be more than 0")
 	}
 
-	return &generatorpb.GenerateResponse{
-		Slug: h.service.Generate(int(req.Length)),
-	}, nil
+	slug, err := h.service.Generate(ctx, int(req.Length))
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("generator: failed to generate slug: %s", err.Error()))
+	}
+
+	return &generatorpb.GenerateResponse{Slug: slug}, nil
 }

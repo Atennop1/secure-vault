@@ -26,7 +26,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) Store(ctx context.Context, req *storagepb.StoreRequest) (*emptypb.Empty, error) {
 	err := h.service.Store(ctx, req.Key, req.Value)
 	if err != nil {
-		return &emptypb.Empty{}, fmt.Errorf("storage: failed to store: %w", err)
+		return &emptypb.Empty{}, status.Error(codes.Internal, fmt.Sprintf("storage: failed to store '%s' on key '%s'", req.Value, req.Key))
 	}
 
 	return &emptypb.Empty{}, nil
